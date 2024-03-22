@@ -8,7 +8,7 @@
 	across multiple lines, even, but always make sure to close with two dashes and right angle bracket -->
 	
 	
-	<title>say_my_name: Zhixin Cao</title>
+	<title>Zhixin Cao</title>
 
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,16 +42,15 @@
 // (9) in this variable, you define the longitude, latitude, and zoom level of the user map when they load the page, then follow with the tile layer you want (here it is mapbox)
 	
 	
-	var mymap = L.map('mapid').setView([41.79116133977498, -87.59823778348704], 16);
-	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-		maxZoom: 19,
-		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors '
-	}).addTo(mymap);
+	var mymap = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+	maxZoom: 19,
+	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
+}).addTo(mymap);
 //(10) right above here, you see you're adding this tileset and setting the max zoom level of "mymap" 
 
 //(11) this is how you define individual features on the map - a marker, a cirlce, a polygon. You could also call up a variable and point it to a hosted GIS file to load it in.
 //(12) note that each popup has preloaded text here. You could also have a variable that points attributes in a dataset to populate a popup; we will do this in the future
-	L.marker([41.78690767353724, -87.60065026886691]).addTo(mymap)
+	L.marker([41.790691955748315, -87.60239266315811]).addTo(mymap)
 		.bindPopup("<b>Hello world!</b><br />I open automatically.").openPopup();
 
 	L.circle([41.792112680773606, -87.60092482570215], 200, {
