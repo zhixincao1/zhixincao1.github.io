@@ -36,9 +36,7 @@
         tms: false,
         attribution: 'Created by QGIS'
     }).addTo(map);
-
-    // Use a simple circle marker for the bus stops
-    var bus = L.geoJson(bus_stop, { 
+    var bus = L.geoJson(bus, { 
         pointToLayer: function (feature, latlng) {
             return L.circleMarker(latlng, {
                 radius: 8,
