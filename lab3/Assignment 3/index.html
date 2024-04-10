@@ -11,8 +11,7 @@
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
             integrity="sha384-okbbMvvx/qfQkmiQKfd5VifbKZ/W8p1qIsWvE1ROPUfHWsDcC8/BnHohF7vPg2T6"
             crossorigin=""></script>
-    <!-- Load GeoJSON dataset -->
-    <script src="bus.js"></script>
+    <script src="bus.js"></script> 
     <style type="text/css">
         body {
             margin: 0;
@@ -35,7 +34,19 @@
         tms: false,
         attribution: 'Created by QGIS'
     }).addTo(map);
-    var busLayer = new L.geoJson(bus_stop).addTo(map);
+    var bus = L.geoJson(bus_stop, {
+        pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, {
+                radius: 8,
+                fillColor: "#0078A8", // Bus-like blue color
+                color: "#003350",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            });
+        }
+    }).addTo(map);
 </script>
 </body>
 </html>
+
