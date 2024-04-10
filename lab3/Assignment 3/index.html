@@ -41,7 +41,7 @@
         iconAnchor: [16, 18.5], 
         popupAnchor: [0, -18.5] 
     });
-    var bus = L.geoJson(bus_stop, {
+    var bus = L.geoJson(bus, {
         pointToLayer: function (feature, latlng) {
             return L.marker(latlng, {icon: busIcon});
         }
