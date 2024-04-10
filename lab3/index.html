@@ -31,7 +31,7 @@
     L.control.attribution({prefix: false}).addTo(map);
     // Add the GeoJSON layer to the map
     var bus = new L.geoJson(bus).addTo(map);
-    var tilesource_layer = L.tileLayer('https://zhixincao1.github.io/lab3/Assignment 3/{z}/{x}/{y}.png', {
+    var tilesource_layer = L.tileLayer('https://zhixincao1.github.io/lab3/{z}/{x}/{y}.png', {
         minZoom: 13,
         maxZoom: 15,
         tms: false,
