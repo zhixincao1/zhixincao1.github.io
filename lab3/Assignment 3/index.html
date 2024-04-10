@@ -11,7 +11,8 @@
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
             integrity="sha384-okbbMvvx/qfQkmiQKfd5VifbKZ/W8p1qIsWvE1ROPUfHWsDcC8/BnHohF7vPg2T6"
             crossorigin=""></script>
-    <script src="bus.js"></script> <!-- Make sure bus.js contains the variable 'bus_stop' with your GeoJSON data -->
+    <!-- Load GeoJSON dataset -->
+    <script src="bus.js"></script>
     <style type="text/css">
         body {
             margin: 0;
@@ -28,26 +29,14 @@
 <script>
     var map = L.map('map', {attributionControl: false}).setView([41.793, -87.5964], 14);
     L.control.attribution({prefix: false}).addTo(map);
-
-    var tileLayerURL = 'https://zhixincao1.github.io/lab3/Assignment%203/output1/{z}/{x}/{y}.png';
-    var tilesource_layer = L.tileLayer(tileLayerURL, {
+    var tilesource_layer = L.tileLayer('https://zhixincao1.github.io/lab3/Assignment%203/output/{z}/{x}/{y}.png', {
         minZoom: 13,
         maxZoom: 15,
         tms: false,
         attribution: 'Created by QGIS'
     }).addTo(map);
-    var bus = L.geoJson(bus, { 
-        pointToLayer: function (feature, latlng) {
-            return L.circleMarker(latlng, {
-                radius: 8,
-                fillColor: "#ff7800", // Customize the color as needed
-                color: "#000",
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8
-            });
-        }
-    }).addTo(map);
+    var busLayer = new L.geoJson(bus_stop).addTo(map);
 </script>
 </body>
 </html>
+
