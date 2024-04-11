@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    <title>Assignment 4 | Zhixin Cao</title>
+    <style>
+        html, body, #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css"/>
+    <script src="https://js.arcgis.com/4.29/"></script>
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/TileLayer",
+            "esri/layers/GeoJSONLayer",
+            "esri/widgets/Legend",
+            "esri/layers/FeatureLayer"
+        ], function(Map, MapView, TileLayer, GeoJSONLayer, Legend, FeatureLayer) {
+            var thebasemap = new TileLayer({
+                url: "https://gisext.lincoln.ne.gov/arcgis/rest/services/GIS/LancoBasemap/MapServer/"
+            });
+
+            const renderer = {
+                type: "simple",
+                symbol: {
+                    type: "simple-marker",
+                    color: "red", 
+                    outline: {
+                        color: "white", 
+                        width: 1
+                    }
+                },
+                visualVariables: [
+                    {
+                        type: "size",
+                        field: "CNTASSDVAL",
+                        stops: [
+                            {value: 100000, size: "7px", label: "Low"},
+                            {value: 500000, size: "17px", label: "Medium"},
+                            {value: 1000000, size: "26px", label: "High"}
+                        ]
+                    }
+                ]
+            };
+
+            const geojsonLayer = new GeoJSONLayer({
+                url: "https://rcshepard.github.io/downtownlincoln.geojson",
+                renderer: renderer
+            });
+
+            var featureLayer = new FeatureLayer({
+                url: "https://gisext.lincoln.ne.gov/arcgis/rest/services/Parks/Park_Boundaries/MapServer/0"
+            });
+            var commuterTrailUnitsLayer = new GeoJSONLayer({
+                url: "https://gis.lincoln.ne.gov/public/rest/services/Parks/TrailUnitsAndParkWalkways/MapServer/3/query?outFields=*&where=1%3D1&f=geojson",
+                title: "Commuter Trail Units" 
+            });
+
+            var map = new Map({
+                layers: [thebasemap, geojsonLayer, featureLayer, commuterTrailUnitsLayer] 
+            });
+
+            var view = new MapView({
+                container: "viewDiv",
+                map: map,
+                zoom: 16,
+                center: [-96.68, 40.81]
+            });
+
+            var legend = new Legend({
+                view: view,
+                layerInfos: [
+                    {
+                        layer: geojsonLayer,
+                        title: "Assignment 4 Symbols"
+                    },
+                    {
+                        layer: commuterTrailUnitsLayer, 
+                        title: "Commuter Trail Units"
+                    }
+                ]
+            });
+
+            view.ui.add(legend, "bottom-right");
+        });
+    </script>
+</head>
+<body>
+    <div id="viewDiv"></div>
+    <div style="position: fixed; bottom: 0; right: 0; background: rgba(255, 255, 255, 0.7); padding: 5px;">
+        &copy; 2024 Zhixin Cao
+    </div>
+</body>
+</html>
+
