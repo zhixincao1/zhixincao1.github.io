@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lab 5 | D3</title>
+    <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
+    <script src="https://rcshepard.github.io/lab5/hyderds.js"></script>
+    <script src="https://rcshepard.github.io/lab5/hpblds.js"></script>
+    <style>
+        body {
+            position: absolute;
+            font-family: "Proxima Nova", "Montserrat", sans-serif;
+        }
+        h1, h2 {
+            position: absolute;
+            background: white;
+            left: 10px;
+            font-size: 1.3em;
+            font-weight: 100;
+        }
+        h2 {
+            top: 30px;
+            font-size: 1em;
+        }
+        .hover {
+            fill: yellow;   
+        }
+    </style>
+</head>
+<body>
+    <h1>Age of Hyde Park Buildings</h1>
+    <h2></h2> <!-- Element to display year built information -->
+    <script>
+        // Width and height of the visualization
+        var width = 1000;
+        var height = 600;
+
+        // Color scale variables
+        var lowColor = '#f9f9f9'; // Very light pink
+        var highColor = '#bc2a66'; // Strong raspberry color
+
+        // Year range for color scale
+        var minVal = 1900;
+        var maxVal = 2024;
+
+        // Define the color ramp
+        var ramp = d3.scaleLinear().domain([minVal, maxVal]).range([lowColor, highColor]);
+
+        // Create the SVG
+        var svg = d3.select("body")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+
+        // g will contain road geometry elements
+        var roads = svg.append("g");
+
+        // Set Projection Parameters
+        var albersProjection = d3.geoAlbers()
+            .scale(2850000)
+            .rotate([87.596305043, 0])
+            .center([0, 41.79503802])
+            .translate([width / 2, height / 2]);
+        
+        // Create GeoPath function to turn lat/lon into screen coordinates
+        var geoPath = d3.geoPath()
+                        .projection(albersProjection);
+
+        // Define a new group for building data to allow for specific customizations
+        var hyde_json = svg.append("g");
+
+        // Ensure the data loads before trying to use it
+        document.addEventListener("DOMContentLoaded", function() {
+            // Process road data
+            if (hyderds) {
+                roads.selectAll("path")
+                 .data(hyderds.features)
+                 .enter()
+                 .append("path")
+                 .attr("d", geoPath)
+                 .attr("fill", "#ccc")
+                 .attr("stroke", "#333")
+                 .attr("class", "road");
+            }
+            
+            // Process building data using the new group
+            if (hpblds) {
+                hyde_json.selectAll("path")
+                 .data(hpblds.features)
+                 .enter()
+                 .append("path")
+                 .attr("d", geoPath)
+                 .attr("fill", function(d) { return ramp(d.properties.YEAR_BUILT); }) // Use the ramp for fill based on YEAR_BUILT
+                 .attr("stroke", "#999") // Grey stroke for buildings
+                 .attr("class", "buildingdata")
+                 .on("mouseover", function(event, d) {
+                     // Populate h2 with "built in" & the year built field from the json
+                     d3.select("h2").text("Built in " + d.properties.YEAR_BUILT);
+                     d3.select(this).attr("class", "buildingdata hover");
+                 })
+                 .on("mouseout", function(d) {
+                     d3.select("h2").text("");
+                     d3.select(this).attr("class", "buildingdata");
+                 });
+            }
+        });
+    </script>
+</body>
+</html>
