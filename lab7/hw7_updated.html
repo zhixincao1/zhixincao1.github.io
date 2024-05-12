@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Proportional Symbol Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://skeate.dev/Leaflet.timeline/examples/leaflet.timeline.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+        .leaflet-bottom.leaflet-left {
+            width: 100%;
+        }
+        .leaflet-control-container .leaflet-timeline-controls {
+            box-sizing: border-box;
+            width: 100%;
+            margin: 0;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        function getColorFor(value) {
+            return value >= 10 ? '#08306b' :
+                   value >= 8  ? '#2879b9' :
+                   value >= 6  ? '#4292c6' :
+                   value >= 4  ? '#6baed6' :
+                   value >= 2  ? '#9ecae1' :
+                   value >= 0  ? '#c6dbef' :
+                   value >= -2 ? '#fcbba1' :
+                   value >= -4 ? '#fc9272' :
+                   value >= -6 ? '#fb6a4a' :
+                   '#cb181d';
+        }
+
+        function getSizeFor(voteShare) {
+            // Use electoral vote to scale size proportionally, ensure a minimum size of 5
+            return Math.max(5, voteShare * 2); // Example scaling factor
+        }
+
+        var background = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles © Esri — Esri, DeLorme, NAVTEQ',
+            maxZoom: 16
+        });
+
+        var map = L.map('map', {
+            layers: [background],
+            center: new L.LatLng(38, -95),  // Center of the USA
+            zoom: 5
+        });
+
+        var timeline;
+        var timelineControl;
+
+        function onLoadData(data) {
+            timeline = L.timeline(data, {
+                pointToLayer: function (feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        radius: getSizeFor(feature.properties['EV(1)_EV']),
+                        fillColor: getColorFor(feature.properties.DIFF),
+                        color: getColorFor(feature.properties.DIFF),
+                        weight: 1,
+                        fillOpacity: 0.9
+                    }).bindTooltip('<h3>' + feature.properties.NAME + '</h3> <p>Biden: <strong>' + feature.properties.DEM + '</strong> <br>Trump: <strong>' + feature.properties.REP + '</strong> <br>Electoral Votes: ' + feature.properties['EV(1)_EV'] + '</p>');
+                },
+                waitToUpdateMap: true
+            });
+
+            timelineControl = L.timelineSliderControl({
+                formatOutput: function (date) {
+                    return new Date(date).toLocaleDateString();
+                },
+                enableKeyboardControls: true
+            });
+            timeline.addTo(map);
+            timelineControl.addTo(map);
+            timelineControl.addTimelines(timeline);
+        }
+
+        // Replace the URL with the path to your own .jsonp file
+        var script = document.createElement('script');
+        script.src = 'https://zhixincao1.github.io/lab7/centriods.jsonp';
+        document.getElementsByTagName('head')[0].appendChild(script);
+    </script>
+</body>
+</html>
