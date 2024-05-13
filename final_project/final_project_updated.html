@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Patent BUbbleMap</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        #map { height: 600px; width: 100%; }
+        #controls {
+            padding: 20px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #yearSlider { width: 60%; }
+        button {
+            padding: 8px 16px;
+            margin: 0 8px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="controls">
+        <button id="playPauseButton">Play</button>
+        <label for="yearSlider">Year: <span id="selectedYear"></span></label>
+        <input type="range" id="yearSlider" min="2017" max="2022" step="1">
+        <label for="entityType">Entity Type:</label>
+        <select id="entityType">
+            <option value="All">All</option>
+            <option value="Enterprise">Enterprise</option>
+            <option value="Institution/University">Institution/University</option>
+        </select>
+    </div>
+    <script src="https://zhixincao1.github.io/final_project/patent.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([34.0479, 100.6197], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Determine the range of years dynamically
+        var years = patent.features.map(feature => feature.properties["Application Year"]);
+        var minYear = Math.min(...years);
+        var maxYear = Math.max(...years);
+
+        // Set slider attributes dynamically based on min and max years
+        var yearSlider = document.getElementById('yearSlider');
+        yearSlider.min = minYear;
+        yearSlider.max = maxYear;
+        yearSlider.value = minYear;
+        document.getElementById('selectedYear').textContent = minYear;
+
+        // Helper function to aggregate data by city and province
+        function aggregateData(features, year, entityType) {
+            var cityAggregation = {};
+
+            features.forEach(feature => {
+                var city = feature.properties["Adm2_Name_EN"];
+                var province = feature.properties["Adm1_Name_EN"];
+                var lat = feature.geometry.coordinates[1];
+                var lon = feature.geometry.coordinates[0];
+                var currentEntityType = feature.properties["Entity_Type"];
+
+                // Check year and entity type filters
+                if ((entityType === "All" || currentEntityType === entityType) &&
+                    feature.properties["Application Year"] <= year) {
+                    
+                    // Create an entry if none exists
+                    if (!cityAggregation[city]) {
+                        cityAggregation[city] = {
+                            province: province,
+                            city: city,
+                            lat: lat,
+                            lon: lon,
+                            count: 0,
+                            entityType: entityType === "All" ? "All" : currentEntityType
+                        };
+                    }
+
+                    // Increment the count
+                    cityAggregation[city].count += 1;
+                }
+            });
+
+            // Convert object to GeoJSON feature collection
+            var aggregatedFeatures = Object.values(cityAggregation).map(cityData => {
+                return {
+                    "type": "Feature",
+                    "properties": {
+                        "City": cityData.city,
+                        "Province": cityData.province,
+                        "PatentCount": cityData.count,
+                        "EntityType": cityData.entityType
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [cityData.lon, cityData.lat]
+                    }
+                };
+            });
+
+            return { "type": "FeatureCollection", "features": aggregatedFeatures };
+        }
+
+        // Function to get the color based on the entity type
+        function getColor(entityType) {
+            switch (entityType) {
+                case "Enterprise":
+                    return "#ff9800"; // Orange for enterprises
+                case "Institution/University":
+                    return "#4caf50"; // Green for institutions/universities
+                default:
+                    return "#2196f3"; // Blue for "All"
+            }
+        }
+
+        // Function to update GeoJSON markers based on user input
+        function updateMarkers(year, entityType) {
+            var aggregatedData = aggregateData(patent.features, year, entityType);
+            geoJsonLayer.clearLayers();
+            geoJsonLayer.addData(aggregatedData);
+        }
+
+        // Create GeoJSON layer for accumulated sums
+        var geoJsonLayer = L.geoJSON([], {
+            pointToLayer: function (feature, latlng) {
+                // Circle size directly proportional to the accumulated count
+                var radius = Math.max(4, Math.sqrt(feature.properties.PatentCount) * 2);
+                var fillColor = getColor(feature.properties.EntityType);
+
+                return L.circleMarker(latlng, {
+                    radius: radius,
+                    fillColor: fillColor,
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+            },
+            onEachFeature: function (feature, layer) {
+                if (feature.properties) {
+                    layer.bindPopup(
+                        'City: ' + feature.properties.City +
+                        '<br>Province: ' + feature.properties.Province +
+                        '<br>Accumulated Patents: ' + feature.properties.PatentCount +
+                        '<br>Entity Type: ' + feature.properties.EntityType
+                    );
+                }
+            }
+        }).addTo(map);
+
+        // Event listener for the year slider
+        yearSlider.oninput = function() {
+            var selectedYear = this.value;
+            document.getElementById('selectedYear').textContent = selectedYear;
+            updateMarkers(selectedYear, document.getElementById('entityType').value);
+        };
+
+        // Event listener for the entity type dropdown
+        document.getElementById('entityType').onchange = function() {
+            updateMarkers(yearSlider.value, this.value);
+        };
+
+        // Play/Pause button functionality
+        var playing = false;
+        var playPauseButton = document.getElementById('playPauseButton');
+        var currentYear = minYear;
+
+        playPauseButton.onclick = function() {
+            playing = !playing;
+            playPauseButton.textContent = playing ? 'Pause' : 'Play';
+            if (playing) {
+                animateSlider();
+            }
+        };
+
+        function animateSlider() {
+            if (playing && currentYear <= maxYear) {
+                yearSlider.value = currentYear;
+                document.getElementById('selectedYear').textContent = currentYear;
+                updateMarkers(currentYear, document.getElementById('entityType').value);
+                currentYear++;
+                setTimeout(animateSlider, 1000);
+            } else {
+                playing = false;
+                playPauseButton.textContent = 'Play';
+                currentYear = minYear;
+            }
+        }
+
+        // Initial population of markers
+        updateMarkers(minYear, "All");
+    </script>
+</body>
+</html>
