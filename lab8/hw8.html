@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New GeoJSON Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" crossorigin=""></script>
+
+    <!-- Leaflet Slider Control -->
+    <script src="https://dsps.lib.uiowa.edu/placing/public/leafletSlider-1.0.2/leaflet.SliderControl.min.js"></script>
+
+    <!-- Leaflet Fuse -->
+    <script src="https://dsps.lib.uiowa.edu/placing/public/fuse-1.2.1/fuse.min.js"></script>
+    <script src="https://dsps.lib.uiowa.edu/placing/public/leafletFuseSearch-noVersion/leafletfuse.js"></script>
+    <link rel="stylesheet" href="https://dsps.lib.uiowa.edu/placing/public/leafletFuseSearch-noVersion/leafletfuse.css" type="text/css"/>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" type="text/css">
+    <script src="https://dsps.lib.uiowa.edu/placing/public/jqueryUiTouchPunch-0.2.2/jquery.ui.touch-punch.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="https://dsps.lib.uiowa.edu/placing/css/style.css">
+    <link rel="stylesheet" type="text/css" href="https://dsps.lib.uiowa.edu/placing/css/navwrap.css">
+</head>
+<body>
+    <div id="map" style="width: 100%; height: 650px"></div>
+    <script>
+        window.onload = function() {
+            $.getJSON('https://zhixincao1.github.io/lab8/briton_data_lab8.geojson', function(geojsonData) {
+                if (!geojsonData) {
+                    console.error('GeoJSON data not loaded.');
+                    return;
+                }
+
+                console.log("GeoJSON data loaded successfully:", geojsonData);
+
+                // Initialize the map with a base layer
+                var basemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                });
+
+                var map = L.map('map', {
+                    center: [41.401397, -92.354629],
+                    zoom: 10,
+                    layers: [basemap] 
+                });
+
+                // Define the popup function
+                var onEachFeature = function(feature, layer) {
+                    if (feature.properties) {
+                        var prop = feature.properties;
+                        var popup = '<h3>' + (prop['name'] ? prop['name'] : 'N/A') + '</h3>' +
+                                    '<strong>Latitude: </strong>' + (prop['latitude'] ? prop['latitude'] : 'N/A') + '<br>' +
+                                    '<strong>Longitude: </strong>' + (prop['longitude'] ? prop['longitude'] : 'N/A') + '<br>' +
+                                    '<strong>Time: </strong>' + (prop['time'] ? prop['time'] : 'N/A');
+                        feature.layer = layer;
+                        layer.bindPopup(popup, {maxWidth: "auto"});
+                    }
+                };
+
+                // Define circle marker styles with new colors
+                var blueCircleMarkers = {
+                    radius: 4,
+                    fillColor: "#1E90FF",
+                    color: "#0000FF",
+                    weight: 1,
+                    opacity: 0.8,
+                    fillOpacity: 0.5
+                };
+
+                var orangeCircleMarkers = {
+                    radius: 5,
+                    fillColor: "#FFA500",
+                    color: "#FF4500",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.7
+                };
+
+                var greenCircleMarkers = {
+                    radius: 5,
+                    fillColor: "#32CD32",
+                    color: "#006400",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.7
+                };
+
+                // Define the layers
+                var firstLayer = L.geoJson(geojsonData, {
+                    onEachFeature: onEachFeature,
+                    pointToLayer: function(feature, latlng) {
+                        return L.circleMarker(latlng, blueCircleMarkers);
+                    }
+                }).addTo(map);
+
+                var timelineLayer = L.geoJson(geojsonData, {
+                    onEachFeature: onEachFeature,
+                    pointToLayer: function(feature, latlng) {
+                        return L.circleMarker(latlng, orangeCircleMarkers);
+                    }
+                });
+
+                var searchLayer = L.geoJson(geojsonData, {
+                    onEachFeature: onEachFeature,
+                    pointToLayer: function(feature, latlng) {
+                        return L.circleMarker(latlng, greenCircleMarkers);
+                    }
+                });
+
+                // Add slider control
+                var sliderControl = L.control.sliderControl({
+                    position: "topright",
+                    layer: timelineLayer,
+                    range: true
+                });
+
+                map.addControl(sliderControl);
+                sliderControl.startSlider();
+
+                // Define search control options
+                var searchOptions = {
+                    position: 'topleft',
+                    title: 'Search',
+                    placeholder: 'Search by Name',
+                    maxResultLength: 10,
+                    caseSensitive: false,
+                    showInvisibleFeatures: true,
+                    layerToToggle: searchLayer,
+                    threshold: 0.5,
+                    showResultFct: function(feature, container) {
+                        var props = feature.properties;
+                        var name = L.DomUtil.create('b', null, container);
+                        name.innerHTML = props.name ? props.name : 'N/A';
+                        container.appendChild(L.DomUtil.create('br', null, container));
+                        container.appendChild(document.createTextNode(props.time ? props.time : 'N/A'));
+                    }
+                };
+
+                var searchControl = L.control.fuseSearch(searchOptions);
+                map.addControl(searchControl);
+
+                console.log("Indexing features for search:");
+                console.log(geojsonData.features.map(feature => feature.properties.name));
+
+                searchControl.indexFeatures(geojsonData.features, ['name']);
+
+                console.log("Search control added and features indexed for search.");
+
+                var overlays = {
+                    "GeoJSON Data": firstLayer
+                };
+
+                var baseMaps = {
+                    "Historic": basemap
+                };
+
+                L.control.layers(baseMaps, overlays, {collapsed: false}).addTo(map);
+            });
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
